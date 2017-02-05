@@ -5,18 +5,18 @@ if ! command -v exif > /dev/null 2>&1; then
     exit 1
 fi
 
-usage="Usage: ${0##*/} [--dry-run] DIRECTORY"
+usage="Usage: ${0##*/} [--dry-run | -n] [directory]"
 
-if [ "$1" = --help ]; then
+if [ "$1" = --help -o "$1" = -h ]; then
     echo "$usage"
     exit 0
 fi
 
-dry_run=false
-
-if [ "$1" = --dry-run ]; then
+if [ "$1" = --dry-run -o "$1" = -n ]; then
     dry_run=true
     shift
+else
+    dry_run=false
 fi
 
 if [ -z "$1" ]; then
@@ -40,10 +40,10 @@ skip_count=0
 for file in "$cwd"/*; do
     if [ -d "$file" ]; then
         echo "$file skipped because it is a directory"
+        let skip_count++
         continue
     fi
 
-    answer=
     ext="${file##*\.}"
 
     if [ "${ext,,}" != jpg -a "${ext,,}" != jpeg ]; then
@@ -52,48 +52,39 @@ for file in "$cwd"/*; do
         continue
     fi
 
-    if datetime="$(exif --debug --machine-readable --tag=DateTimeOriginal "$file" 2>&1)"; then
-        datetime="${datetime##*$'\n'}"
-    else
-        datetime="$(stat --format=%y "$file")"
-        datetime="${datetime%\.*}"
+    exif_dto="$(exif -mt DateTimeOriginal "$file" 2>/dev/null)"
+    exif_dt="$(exif -mt DateTime "$file" 2>/dev/null)"
+    last_mod="$(stat -c %y "$file")"
+    last_mod="${last_mod%\.*}"
 
-        echo "Warning: $file does not contain tag DateTimeOriginal"
-        echo "Last modified date is $datetime - use it instead?"
+    echo
+    echo "$file"
+    echo "1) DateTimeOriginal: $exif_dto"
+    echo "2) DateTime: $exif_dt"
+    echo "3) Last modified: $last_mod"
+    echo "4) Skip"
 
-        option1="Use last modified date"
-        option2="Skip file"
+    ans=
+    datetime=
+    while true; do
+        read -p "Select a value: " ans
+        case "$ans" in
+            1) datetime="$exif_dto"; break;;
+            2) datetime="$exif_dt"; break;;
+            3) datetime="$last_mod"; break;;
+            4) break;;
+        esac
+    done
 
-        select answer in "$option1" "$option2"; do
-            case "$answer" in
-                "$option1"|"$option2")
-                    break
-                    ;;
-            esac
-        done
-
-        if [ "$answer" = "$option2" ]; then
-            echo "$file skipped - not using last modified date"
-            let skip_count++
-            continue
-        fi
+    if [ -z "$datetime" ]; then
+        echo "$file skipped"
+        let skip_count++
+        continue
     fi
 
     datetime="${datetime//:/-}"
     datetime="${datetime// /_}"
     newfile="$cwd/$datetime.$ext"
-    n=1
-
-    # BUG: this doesn't work in dry run if more than one file would have its named changed
-    # to the same thing
-    while [ -f "$newfile" ]; do
-        if [ "$file" = "$newfile" ]; then
-            break
-        fi
-
-        newfile="$cwd/$datetime"_"$n.$ext"
-        let n++
-    done
 
     if [ "$file" = "$newfile" ]; then
         echo "$file skipped - name already correct"
@@ -101,13 +92,29 @@ for file in "$cwd"/*; do
         continue
     fi
 
+    # BUG: this doesn't work in dry run if more than one file would have its
+    # named changed to the same thing
+    n=0
+    while [ -f "$newfile" ]; do
+        let n++
+        newfile="$cwd/$datetime"_"$n.$ext"
+    done
+
     if [ "$dry_run" = false ]; then
         mv "$file" "$newfile"
+        echo "$file renamed to $newfile"
+        let rename_count++
+    else
+        echo "$file would be renamed to $newfile"
+        let rename_count++
     fi
-
-    echo "$file renamed to $newfile"
-    let rename_count++
 done
 
 echo
-echo "$rename_count files renamed, $skip_count files skipped"
+
+if [ "$dry_run" = false ]; then
+    echo "$rename_count files renamed, $skip_count files skipped"
+else
+    echo "$rename_count files would be renamed, $skip_count files would be \
+skipped"
+fi
