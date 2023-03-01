@@ -52,8 +52,8 @@ for file in "$cwd"/*; do
         continue
     fi
 
-    exif_date_time="$(exif --no-fixup -mt DateTime "$file" 2>/dev/null)"
     exif_date_time_orig="$(exif --no-fixup -mt DateTimeOriginal "$file" 2>/dev/null)"
+    exif_date_time="$(exif --no-fixup -mt DateTime "$file" 2>/dev/null)"
     created_date_time="$(stat -c %w "$file")"
     created_date_time="${created_date_time%\.*}"
     modified_date_time="$(stat -c %y "$file")"
@@ -64,8 +64,8 @@ for file in "$cwd"/*; do
     echo
     echo "$file"
     echo "0) Skip"
-    echo "1) EXIF date and time: $exif_date_time"
-    echo "2) EXIF data and time (original): $exif_date_time_orig"
+    echo "1) EXIF data and time (original): $exif_date_time_orig"
+    echo "2) EXIF date and time: $exif_date_time"
     echo "3) File created: $created_date_time"
     echo "4) File last modified: $modified_date_time"
     echo "5) Enter manually"
@@ -81,9 +81,9 @@ for file in "$cwd"/*; do
     fi
 
     if [ "$selected_option" -eq 1 ]; then
-        selected_date_time="$exif_date_time"
-    elif [ "$selected_option" -eq 2 ]; then
         selected_date_time="$exif_date_time_orig"
+    elif [ "$selected_option" -eq 2 ]; then
+        selected_date_time="$exif_date_time"
     elif [ "$selected_option" -eq 3 ]; then
         selected_date_time="$created_date_time"
     elif [ "$selected_option" -eq 4 ]; then
