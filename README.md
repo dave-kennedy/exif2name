@@ -1,3 +1,34 @@
+I will no longer be maintaining this tool. Instead, I will be using
+[exiftool](https://exiftool.org).
+
+In addition to JPG files, exiftool also supports reading and writing EXIF data
+in AVI, MP4 and PNG files. Unlike this tool, won't stop to ask what to do with
+each file.
+
+To rename all files in a directory according to the contents of the
+`DateTimeOriginal` tag, run:
+
+```sh
+$ exiftool '-FileName<DateTimeOriginal' -d '%Y-%m-%d_%H-%M-%S%%+c.%%le' [directory]
+```
+
+As long as the `DateTimeOriginal` tag exists, it will be renamed in the format
+`%Y-%m-%d_%H-%M-%S.jpg`, followed by a number if another file has the same name.
+If the tag doesn't exist, exiftool will report an error and continue processing
+the rest.
+
+The following command simulates the above without actually renaming anything,
+i.e. a dry-run:
+
+```sh
+$ exiftool '-TestName<DateTimeOriginal' -d '%Y-%m-%d_%H-%M-%S%%+c.%%le' [directory]
+```
+
+See [here](https://exiftool.org/filename.html) for more info on the `FileName`
+and `TestName` tags.
+
+---
+
 This script renames JPG files according to EXIF data. It can be run like so:
 
 ```sh
