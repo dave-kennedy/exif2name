@@ -24,6 +24,11 @@ i.e. a dry-run:
 $ exiftool '-TestName<DateTimeOriginal' -d '%Y-%m-%d_%H-%M-%S%%+c.%%le' [directory]
 ```
 
+In case the `DateTimeOriginal` tag is not available, `FileModifyDate` might be
+correct, or close enough, or it might be when the file was copied to your device
+as opposed to when it was originally created (e.g. files shared over MMS).
+Always double check the results of a dry-run before using this tag.
+
 See [here](https://exiftool.org/filename.html) for more info on the `FileName`
 and `TestName` tags.
 
